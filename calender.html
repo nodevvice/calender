@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>합주주 캘린더</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; max-width: 400px; margin: auto; }
+        .day { padding: 10px; border: 1px solid #ddd; cursor: pointer; position: relative; }
+        .header { font-weight: bold; }
+        .today { background-color: #ffeb3b; }
+        .event-input { display: none; position: absolute; top: 30px; left: 50%; transform: translateX(-50%); width: 80%; }
+        .event-text { margin-top: 5px; font-size: 12px; color: #333; }
+    </style>
+</head>
+<body>
+    <h1>
+        <button onclick="changeMonth(-1)">&lt;</button>
+        <span id="month-year"></span>
+        <button onclick="changeMonth(1)">&gt;</button>
+    </h1>
+    <div class="calendar" id="calendar"></div>
+    
+    <script>
+        let currentDate = new Date();
+        let savedEvents = JSON.parse(localStorage.getItem("calendarEvents")) || {};
+
+        function saveEvent(date, eventText) {
+            savedEvents[date] = eventText;
+            localStorage.setItem("calendarEvents", JSON.stringify(savedEvents));
+            renderCalendar();
+        }
+
+        function changeMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            document.getElementById("month-year").textContent = `${year}년 ${month + 1}월`;
+            const calendarEl = document.getElementById("calendar");
+            calendarEl.innerHTML = "";
+            
+            ["일", "월", "화", "수", "목", "금", "토"].forEach(day => {
+                const div = document.createElement("div");
+                div.textContent = day;
+                div.className = "header";
+                calendarEl.appendChild(div);
+            });
+            
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                calendarEl.appendChild(document.createElement("div"));
+            }
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = `${year}-${month + 1}-${day}`;
+                const div = document.createElement("div");
+                div.className = "day";
+                if (year === new Date().getFullYear() && month === new Date().getMonth() && day === new Date().getDate()) {
+                    div.classList.add("today");
+                }
+                div.textContent = day;
+                
+                const eventText = document.createElement("div");
+                eventText.className = "event-text";
+                eventText.textContent = savedEvents[dateKey] || "";
+                div.appendChild(eventText);
+                
+                const input = document.createElement("input");
+                input.type = "text";
+                input.className = "event-input";
+                input.value = savedEvents[dateKey] || "";
+                input.onblur = () => {
+                    saveEvent(dateKey, input.value);
+                };
+                div.appendChild(input);
+                
+                div.onclick = () => {
+                    input.style.display = "block";
+                    input.focus();
+                };
+                
+                input.addEventListener("input", () => {
+                    eventText.textContent = input.value;
+                });
+                
+                calendarEl.appendChild(div);
+            }
+        }
+
+        renderCalendar();
+    </script>
+</body>
+</html>
